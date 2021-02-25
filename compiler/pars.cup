@@ -1,0 +1,414 @@
+import java_cup.runtime.*;
+
+parser code {:
+    private Scanner scanner;
+    public parser(Lexer scanner){
+        this.scanner = scanner;
+
+    }
+:}
+
+terminal String ELSE,String RETURN,String BREAK,
+
+		,String BOOL,String STRING,String CLASS,String INTERFACE;
+
+terminal String NULL,String THIS,String EXTENDS,
+
+		String IMPLEMENTS,String FOR,String WHILE,String IF;
+
+terminal String VOID,String INT,String String DOUBLE,
+
+		String CONTINUE,String NEW,String NEWARRAY;
+
+terminal String PRINT,String READINTEGER,
+
+		String READLINE,DStringTOI,ITOD,BTOI,ITOB;
+
+terminal String PRINT,String READINTEGER,String READLINE,
+
+		String DTOI,String ITOD,String BTOI,String ITOB;
+
+terminal String SEMICOLON,String COMMA,String DOT,String PLUS,MINUS
+
+		 String PRIVATE,String PROTeTED,String PUBLIC;
+
+terminal String MINUSASSIGN,String STARASSIGN,String LASHASSIGN,
+
+		 String OPENPARANTISES,String CLOSEPARANTISES,String OPENSET;
+
+terminal String XORASSIGN,String NOTASSIGN,String EQUAL,
+
+		String LESSEQUAL,String GREATEREQUAL;
+
+terminal String STAR,String SLASH,String PERCENT,String ASSIGN,String EXCLAMATION,
+
+		 String LESS,String REATER,String OPENBRACKET,String CLOSEBRACKET;
+
+terminal String CLOSESET,String AND,String OR,String PLUS,
+
+		 String PERCENTASSIGN,String ANDASSIGN,String ORASSIGN;
+
+non terminal PrintStmt, Variable, Type,
+VariableDel, FunctionDel;
+
+non terminal Program, Del, ClassDel, 
+ StmtBlock, HelperStmtBlock1, HelperStmtBlock2;
+
+non terminal Formals, Formal, InterfaceDel,
+ ForStmt, BreakStmt, ContinueStmt, ReturnStmt;
+
+non terminal Stmt, Expr, IfStmt, WhileStmt,
+ Inheritance, Implementation, AccessMode, Fields, Field;
+
+non terminal Else,Forinit,Forcondition,
+LValue, Call, Actuals , Constant;
+
+non terminal Prototypes, Prototype, 
+Retvalue,Printval,Actual;
+
+
+preedence left ASSIGN;
+preedence left OR;
+preedence left AND;
+preedence left EQ, NOT_EQ;
+preedence left LESS, LESS_EQ, GREAT, GREAT_EQ;
+preedence left PLUS, MINUS ;
+preedence left OP_PARENTHESES ,OP_BRACKET;
+preedence left MULTI, DIVIDE, REMIND  ;
+preedence left NOT;
+preedence left DOT , OP_BRACE;
+
+
+Program ::= Del | Del Program;
+
+Del ::= VariableDel | FunctionDel | ClassDel | InterfaceDel;
+
+VariableDel ::= Variable SEMICOLON;
+
+Variable ::= Type:type ID:id 
+           | ID ID;
+Type ::= INT:type 
+       | DOUBLE:type 
+       | BOOL:type 
+       | STRING:type 
+       | ID OPENBRACKET CLOSEBRACKET
+       | Type OPENBRACKET CLOSEBRACKET ;
+
+FunctionDel ::= Type ID OPENPARANTISES Formals CLOSEPARANTISES StmtBlock
+               | Type ID OPENPARANTISES  CLOSEPARANTISES StmtBlock
+               | ID ID OPENPARANTISES Formals CLOSEPARANTISES StmtBlock
+               | ID ID OPENPARANTISES  CLOSEPARANTISES StmtBlock
+               | VOID ID OPENPARANTISES  CLOSEPARANTISES StmtBlock
+               | VOID ID OPENPARANTISES Formals CLOSEPARANTISES StmtBlock;
+
+Variableomma ::=
+
+    COMMA Variable:v Variableomma:vc 
+    {:
+        vc.add(v); RESULT = vc;
+        RESULT = new ArrayList<>();
+    :}
+
+
+ClassDel ::=
+
+    CLASS ID:classID ExtendsEps ImplementsEps {:
+
+            RESULT = OpHandler.classDel(classID);
+        }
+            SpagettiStack.stack.nextScope();
+            :}
+    LCURLY FieldStar RCURLY{:
+        SpagettiStack.stack.exitScope();
+    :};
+
+ExtendsEps ::= EXTENDS ID
+    | ;
+
+ImplementsEps ::=IMPLEMENTS ID ImplemetsComma
+    | ;
+
+ImplemetsComma ::=COMMA ID ImplemetsComma
+    | ;
+
+FieldStar ::=Field:f FieldStar:fs {:
+        fs.add(f);RESULT = fs;
+    :}
+    | {:RESULT = new ArrayList<>();:};
+
+Field ::=AccessMode:am VariableDel:vd {:
+            vd.setAccessMode(am);
+            RESULT = vd;
+        
+    :}
+    | AccessMode:am FunctionDel:f {:
+            f.setAccessMode(am);
+            RESULT = f;
+        
+    :};
+
+AccessMode ::=
+    PRIVATE:am 
+    {:
+    		RESULT = OpHandler.createAccessMode(am);
+    	
+    	:}
+    | PROTeTED:am 
+    {:
+    		
+    			RESULT = OpHandler.createAccessMode(am);
+    		
+    	:}
+    | PUBLIC:am 
+    {:
+    		RESULT = OpHandler.createAccessMode(am);
+    	
+    {
+    	RESULT = OpHandler.createAccessMode("d");
+    }
+
+Prototype ::= Type ID OPENPARANTISES Formals CLOSEPARANTISES SEMICOLON
+            | ID ID OPENPARANTISES Formals CLOSEPARANTISES SEMICOLON
+            | VOID ID OPENPARANTISES Formals CLOSEPARANTISES SEMICOLON;
+
+StmtBlock ::= OPENSET  StmtBlock0 
+{: 
+	SpagettiStack.add(); :
+};
+
+StmtBlock0::= VariableDel StmtBlock0
+            | StmtBlock1;
+
+StmtBlock1::= Stmt StmtBlock1
+            | CLOSESET {:
+             SpagettiStack.goup(); 
+            	:};
+
+VariableDelStar StmtStar CLOSESET
+           | OPENSET  StmtStar CLOSESET
+           | OPENSET VariableDelStar  CLOSESET
+           | OPENSET   CLOSESET;
+
+VariableDelStar ::= VariableDel | VariableDelStar VariableDel;
+
+StmtStar ::= Stmt | Stmt StmtStar;
+
+Stmt             ::= Expr T_SEMI_COLON | T_SEMI_COLON
+                       | IfStmt | WhileStmt | ForStmt | BreakStmt|
+                        ContinueStmt| ReturnStmt| PrintStmt| StmtBlock;
+
+IfStmt ::= IF:sem OPENPARANTISES Expr:e CLOSEPARANTISES  
+				{: 
+                    SpagettiStack.push(e);
+
+                    DSCP f = CodeGenerator.cgen(sem);
+
+                    boolean true_false = Boolean.parseBoolean((String) f.value);
+
+                    SpagettiStack.push(true_false);
+
+                    SpagettiStack.add(!true_false); 
+                :}
+            Stmt
+            {: 
+            	boolean true_false = (boolean) SpagettiStack.peek();
+
+                SpagettiStack.push(SpagettiStack.curr);
+
+                SpagettiStack.curr = SpagettiStack.curr.parent; SpagettiStack.add(true_false); 
+
+            :}
+            ElseBlock;
+ElseBlock::=
+             ELSE:els Stmt 
+             {: 
+             	CodeGenerator.cgen(els);
+
+                SymbolTable first = (SymbolTable) SpagettiStack.pop(); boolean true_false = (boolean) SpagettiStack.pop();
+
+                 if (true_false) SpagettiStack.curr = first;
+
+                 SpagettiStack.pop();
+
+                 boolean true_false = (boolean)SpagettiStack.pop(); 
+
+                 if (!true_false) SpagettiStack.curr = SpagettiStack.curr.parent;
+             :}
+             |;
+Expr ::= LValue: vc T_ASSIGN: sem Expr: e
+		{:
+            DSCP dhcp1  = SymbolTable.getDSCP(vc.toString());
+
+            DSCP dhcp2 = SymbolTable.getDSCP(e.toString());
+
+                DSCP newDSCP;
+
+                if (dhcp1.value !=null)
+
+                    if (dhcp1.type.equals("Integer"))
+
+                        newDSCP = new DSCP(dhcp1.type, (Integer) dhcp1.value);
+                    else if (dhcp1.type.equals("Double"))
+
+                        newDSCP = new DSCP(dhcp1.type, (Double) dhcp1.value);
+
+                    else if (dhcp1.type.equals("String"))
+                }
+
+            	if (true_false) SpagettiStack.curr = first;
+
+                SpagettiStack.push(vc);
+
+                SpagettiStack.push(dhcp1.type);
+
+                SpagettiStack.push(e);
+
+                SymbolTable.addEntry(vc.toString(), newDSCP);
+
+        :} 
+
+WhileStmt ::= WHILE:sem OPENPARANTISES Expr:e CLOSEPARANTISES {:
+
+                    SpagettiStack.push(e);
+
+                    DSCP f = CodeGenerator.cgen(sem);
+
+                    boolean true_false = Boolean.parseBoolean((String) f.value);
+
+                    SpagettiStack.push(true_false);
+                    
+                    SpagettiStack.add(!true_false); 
+              :}
+              Stmt {:
+
+                    boolean true_false = (boolean) SpagettiStack.pop();
+                    SpagettiStack.curr = SpagettiStack.curr.parent;
+
+                    while (true_false){
+
+                       DSCP e = (DSCP) SpagettiStack.pop();
+                        DSCP f = CodeGenerator.cgen("while");
+                    }
+
+              :}
+
+              ;
+
+ForStmt ::= FOR OPENPARANTISES  Expr SEMICOLON Expr SEMICOLON Expr CLOSEPARANTISES Stmt
+
+          | FOR OPENPARANTISES  Expr SEMICOLON Expr SEMICOLON  CLOSEPARANTISES Stmt
+
+          | FOR OPENPARANTISES   SEMICOLON Expr SEMICOLON Expr CLOSEPARANTISES Stmt
+
+          | FOR OPENPARANTISES   SEMICOLON Expr SEMICOLON  CLOSEPARANTISES Stmt;
+
+ReturnStmt ::= RETURN  Expr SEMICOLON
+             | RETURN SEMICOLON;
+
+BreakStmt ::= BREAK SEMICOLON;
+
+ContinueStmt ::= CONTINUE SEMICOLON;
+
+PrintStmt ::= PRINT:sem OPENPARANTISES ExprPlusComma:e CLOSEPARANTISES SEMICOLON
+ {: 
+ 	CodeGenerator.cgen(sem); 
+ :};
+ExprPlusComma ::= Expr:e1   
+	{:
+SymbolTable.list.add((DSCP) e1); 
+ 	}
+| Expr:e2 COMMA ExprPlusComma:e 
+	{: 
+		SymbolTable.list.add((DSCP) e2); 
+	:};
+LValue ::=
+    ID:idName
+      {:
+      	RESULT = SpagettiStack.stack.getDSCP(idName);
+      	:}
+    | Expr:exp DOT ID:id 
+
+    | Expr:arr LBRACK Expr:e RBRACK 
+    {:
+    	RESULT = OpHandler.arrayIndexingL(arr,e);
+    :};
+Formals:arglist {:
+
+       OpHandler.giveArg(funcID, arglist);
+
+    :}
+    RPAREN {:
+            SpagettiStack.newFunctionScope(funcID);
+
+            SpagettiStack.nextScope();
+
+    :}
+    StmtBlock {:
+        SpagettiStack.exitScope();
+
+        SpagettiStack.exitScope();
+    :};
+
+
+Constant ::=INTLIT:idnumber
+      {:
+
+      		RESULT = new IntType();
+      		 CodeGenerator.loadConstantIntCgen(Integer.parseInt(idnumber));  
+
+      :}
+    | DOUBLELIT:doubleNumber
+      {:
+
+      			RESULT = new DoubleType(); 
+
+      			CodeGenerator.loadConstantDoublegen(Double.parseDouble(doubleNumber));  
+
+      			CodeGenerator.pushDouble(4);}:
+    | BooleanConstant:boolVal
+      {: 
+
+		RESULT = new BoolType();
+
+		 CodeGenerator.loadConstantBoolCgen( Boolean.parseBoolean(boolVal));
+
+		  CodeGenerator.push(3);
+      			
+      :}
+    | STRINGLIT:stringVal
+      {:
+   		RESULT = new StringType();CodeGenerator.loadStringConstant(stringVal);
+
+   		CodeGenerator.push(3) 
+
+       :}
+    | NULL;
+
+Formals ::=
+
+    Variable:v VariableComma:vc 
+    {:
+        vc.add(v);
+
+        RESULT = vc;
+    :}
+    | {:
+    	RESULT = new ArrayList<>();:};
+
+PrintStmt ::=
+    PRINT LPAREN Expr:e {:
+
+            OpHandler.exprComma(e);
+        
+    :}ExprComma:e {:
+
+            OpHandler.isPrintSt = false;
+
+            OpHandler.printLine();
+
+            SpagettiStack.add(e);
+            RESULT = e;
+        
+    :}
+    RPAREN SEMI;  
+             	
